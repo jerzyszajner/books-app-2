@@ -58,44 +58,33 @@
       booksContainer.appendChild(thisBook.element);
     }
 
+    handleClickEvent(event) {
+      const thisBook = this;
+
+      if (event.target.closest(select.bookImages.imageWrapper)) {
+        event.preventDefault();
+        if (event.detail === 2) {
+          thisBook.addToFavorite(event);
+        }
+      }
+    }
+
     initActions() {
       const thisBook = this;
 
-      thisBook.dom.booksContainer.addEventListener('dblclick', function (event) {
-        thisBook.addToFavorite(event);
-      });
-    }
+      const handleClickEventBound = thisBook.handleClickEvent.bind(thisBook);
 
-    simulateDoubleClick() {
-      const thisBook = this;
-
-      function triggerClick() {
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true
-        });
-        thisBook.dom.imageWrapper.dispatchEvent(clickEvent);
-      }
-
-      thisBook.dom.imageWrapper.addEventListener('click', function (event) {
-        event.preventDefault();
-        console.log(event);
-      });
-
-      triggerClick();
-      triggerClick();
+      thisBook.dom.booksContainer.addEventListener('click', handleClickEventBound);
     }
 
     addToFavorite(event) {
       const thisBook = this;
 
-      const clickedElement = event.target;
+      const clickedElement = event.target.closest(select.bookImages.imageWrapper);
 
-      if (clickedElement && clickedElement.offsetParent.classList.contains('book__image')) {
-        const bookImage = clickedElement.offsetParent;
-        const bookId = bookImage.getAttribute('data-id');
-        const isFavorite = bookImage.classList.toggle(classNames.bookState.favorite);
+      if (clickedElement) {
+        const bookId = clickedElement.getAttribute('data-id');
+        const isFavorite = clickedElement.classList.toggle(classNames.bookState.favorite);
 
         if (isFavorite) {
           if (!thisBook.favoriteBooks.includes(bookId)) {
@@ -106,6 +95,7 @@
         }
       }
     }
+
   }
 
   const app = {
@@ -113,8 +103,8 @@
       const thisApp = this;
 
       for (let bookData of thisApp.data.books) {
-        const book = new Book(bookData.id, bookData);
-        book.simulateDoubleClick();
+        new Book(bookData.id, bookData);
+
       }
     },
 
