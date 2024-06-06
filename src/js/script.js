@@ -4,6 +4,7 @@
   'use strict';
 
   const select = {
+
     templateOf: {
       book: '#template-book',
     },
@@ -13,11 +14,16 @@
     bookImages: {
       imageWrapper: '.book__image',
     },
+    form: {
+      filters: '.filters',
+    },
   };
 
   const classNames = {
+
     bookState: {
       favorite: 'favorite',
+      hidden: 'hidden',
     },
   };
 
@@ -33,6 +39,7 @@
       thisBook.data = data;
 
       thisBook.favoriteBooks = [];
+      thisBook.filters = [];
 
       thisBook.render();
       thisBook.getElements();
@@ -46,7 +53,9 @@
 
       thisBook.dom.wrapper = thisBook.element;
       thisBook.dom.imageWrapper = thisBook.dom.wrapper.querySelector(select.bookImages.imageWrapper);
-      thisBook.dom.booksContainer = document.querySelector(select.containerOf.books);
+      thisBook.dom.imageWrappers = thisBook.dom.wrapper.querySelectorAll(select.bookImages.imageWrapper);
+      thisBook.dom.booksList = document.querySelector(select.containerOf.books);
+      thisBook.dom.booksFilter = document.querySelector(select.form.filters);
     }
 
     render() {
@@ -54,8 +63,20 @@
 
       const generatedHTML = templates.book(thisBook.data);
       thisBook.element = utils.createDOMFromHTML(generatedHTML);
-      const booksContainer = document.querySelector(select.containerOf.books);
-      booksContainer.appendChild(thisBook.element);
+      const booksList = document.querySelector(select.containerOf.books);
+      booksList.appendChild(thisBook.element);
+    }
+
+    initActions() {
+      const thisBook = this;
+
+      thisBook.dom.booksList.addEventListener('click', function (event) {
+        thisBook.handleClickEvent(event);
+      });
+
+      thisBook.dom.booksFilter.addEventListener('change', function (event) {
+        thisBook.handleFilterChange(event);
+      });
     }
 
     handleClickEvent(event) {
@@ -69,22 +90,58 @@
       }
     }
 
-    initActions() {
+    handleFilterChange(event) {
       const thisBook = this;
 
-      const handleClickEventBound = thisBook.handleClickEvent.bind(thisBook);
+      const clickedElement = event.target;
 
-      thisBook.dom.booksContainer.addEventListener('click', handleClickEventBound);
+      if (clickedElement.tagName === 'INPUT' && clickedElement.type === 'checkbox' && clickedElement.name === 'filter') {
+        if (clickedElement.checked) {
+          thisBook.filters.push(clickedElement.value);
+        } else {
+          const index = thisBook.filters.indexOf(clickedElement.value);
+          if (index !== -1) {
+            thisBook.filters.splice(index, 1);
+          }
+        }
+        thisBook.filterBooks();
+      }
+    }
+
+    filterBooks() {
+      const thisBook = this;
+
+      const books = thisBook.dom.imageWrappers;
+      const filters = thisBook.filters;
+
+      for (let book of books) {
+        const bookId = book.getAttribute('data-id');
+        const bookData = dataSource.books.find(book => book.id == bookId);
+        let shouldBeHidden = false;
+
+        for (let filter of filters) {
+          if (!bookData.details[filter]) {
+            shouldBeHidden = true;
+            break;
+          }
+        }
+
+        if (shouldBeHidden) {
+          book.classList.add(classNames.bookState.hidden);
+        } else {
+          book.classList.remove(classNames.bookState.hidden);
+        }
+      }
     }
 
     addToFavorite(event) {
       const thisBook = this;
 
-      const clickedElement = event.target.closest(select.bookImages.imageWrapper);
+      const clickedImage = event.target.closest(select.bookImages.imageWrapper);
 
-      if (clickedElement) {
-        const bookId = clickedElement.getAttribute('data-id');
-        const isFavorite = clickedElement.classList.toggle(classNames.bookState.favorite);
+      if (clickedImage) {
+        const bookId = clickedImage.getAttribute('data-id');
+        const isFavorite = clickedImage.classList.toggle(classNames.bookState.favorite);
 
         if (isFavorite) {
           if (!thisBook.favoriteBooks.includes(bookId)) {
@@ -99,6 +156,7 @@
   }
 
   const app = {
+
     initBooks: function () {
       const thisApp = this;
 
